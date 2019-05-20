@@ -15,7 +15,7 @@ from layers import TacotronSTFT, STFT
 from audio_processing import griffin_lim
 from train import load_model
 from text import text_to_sequence
-from denoiser import Denoiser
+# from denoiser import Denoiser
 
 import librosa
 
@@ -44,7 +44,7 @@ waveglow = torch.load(waveglow_path)['model']
 waveglow.cuda().eval().half()
 for k in waveglow.convinv:
     k.float()
-denoiser = Denoiser(waveglow)
+# denoiser = Denoiser(waveglow)
 
 # Prepare text input
 text = "Waveglow is really awesome!"
