@@ -185,6 +185,7 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
         output_directory, log_directory, rank)
 
     train_loader, valset, collate_fn = prepare_dataloaders(hparams)
+    print('length of train_loader:', len(train_loader))
 
     # Load checkpoint if one exists
     iteration = 0
@@ -255,6 +256,9 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
 
             iteration += 1
 
+    if rank == 0:
+        checkpoint_path = os.path.join(output_directory, "checkpoint_{}".format(iteration))
+        save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

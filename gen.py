@@ -16,19 +16,20 @@ import argparse
 class TTSHelper:
     """"""
 
-    def __init__(self):
+    def __init__(self, tacotron_model, waveglow_model, cleaner):
+        self.cleaner = cleaner
         # Setup hparams
         self.hparams = create_hparams()
         self.hparams.sampling_rate = 22050
 
         # Load model from checkpoint
-        checkpoint_path = "tacotron2_statedict.pt"
+        checkpoint_path = tacotron_model
         self.model = load_model(self.hparams)
         self.model.load_state_dict(torch.load(checkpoint_path)['state_dict'])
         _ = self.model.cuda().eval().half()
 
         # Load WaveGlow for mel2audio synthesis and denoiser
-        waveglow_path = 'waveglow_256channels.pt'
+        waveglow_path = waveglow_model
         self.waveglow = torch.load(waveglow_path)['model']
         self.waveglow.cuda().eval().half()
         for k in self.waveglow.convinv:
@@ -36,9 +37,9 @@ class TTSHelper:
 
     def save_wav(self, x, path) :
         librosa.output.write_wav(path, x.astype(np.float32), sr=self.hparams.sampling_rate)
-
-    def generate(self, text, voice_path):
-        sequence = np.array(text_to_sequence(text, ['english_cleaners']))[None, :]
+    
+    def generate(self, text, voice_path): 
+        sequence = np.array(text_to_sequence(text, [self.cleaner]))[None, :] 
         sequence = torch.autograd.Variable(torch.from_numpy(sequence)).cuda().long()
         # Decode text input and plot results
         _, mel_outputs_postnet, _, _ = self.model.inference(sequence)
@@ -61,15 +62,19 @@ class TTSHelper:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command Usages of TTS Helper')
-    parser.add_argument("-t", "--text", type=str, help="input text for voice translation")
+    parser.add_argument("-t", "--tacotron_model", type=str, default='tacotron2_statedict.pt', help="tacotron model")
+    parser.add_argument("-w", "--waveglow_model", type=str, default='waveglow_256channels.pt', help="waveflow model")
+    parser.add_argument("-c", "--cleaner", type=str, default='english_cleaners', help="optional cleaner: [english_cleaners|transliteration_cleaners]")
+    parser.add_argument("-s", "--sentence", type=str, help="input sentence for voice translation")
     parser.add_argument("-i", "--input_file", type=str, help="input file for voice translation")
     parser.add_argument("-o", "--output", type=str, help="voice output")
     args = parser.parse_args()
 
-    helper = TTSHelper()
-    if args.text:
-        helper.generate(args.text, args.output)
-    elif args.input_file:
-        helper.generate_by_sentences(args.input_file, args.output)
+    if args.sentence or args.input_file:
+        helper = TTSHelper(args.tacotron_model, args.waveglow_model, args.cleaner)
+        if args.sentence:
+            helper.generate(args.sentence, args.output)
+        elif args.input_file:
+            helper.generate_by_sentences(args.input_file, args.output)
     else:
-        parser.print_usage()
+        parser.print_help()
