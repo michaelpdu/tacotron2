@@ -11,6 +11,7 @@ from train import load_model
 from text import text_to_sequence
 import librosa
 from waveglow.glow import WaveGlow
+from pinyin_helper import PinyinHelper
 import argparse
 
 class TTSHelper:
@@ -21,6 +22,9 @@ class TTSHelper:
         # Setup hparams
         self.hparams = create_hparams()
         self.hparams.sampling_rate = 22050
+
+        # pinyin helper
+        self.pinyin_helper = PinyinHelper()
 
         # Load model from checkpoint
         checkpoint_path = tacotron_model
@@ -39,6 +43,7 @@ class TTSHelper:
         librosa.output.write_wav(path, x.astype(np.float32), sr=self.hparams.sampling_rate)
     
     def generate(self, text, voice_path): 
+        text = self.pinyin_helper.get_pinyin(text)
         sequence = np.array(text_to_sequence(text, [self.cleaner]))[None, :] 
         sequence = torch.autograd.Variable(torch.from_numpy(sequence)).cuda().long()
         # Decode text input and plot results
