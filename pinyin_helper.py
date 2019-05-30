@@ -10,6 +10,7 @@ class PinyinHelper:
             u'。': '.',
             u'！': '!',
             u'？': '?',
+            u'：': ':',
         }
 
     def convert_punctuation(self, chinese_text):
